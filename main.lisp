@@ -1,10 +1,10 @@
-;;
+;; 1
 
 (defun f (a) ':b)
 
 (defun g (b) ':c)
 
-(defun identity (a) a)
+(defun id (a) a)
 
 (defun compose (&rest fns)
   (let ((fst (car (last fns))))
@@ -60,3 +60,77 @@
 ;;        edge of its own, or if having B as scaffold is enough.
 ;;        In my opinion, having A -> C present, gives an an edge (eheh)
 ;;        in readability.
+
+
+;; 2
+
+product of itself, with its antecedent
+
+(defun product (lst)
+  (reduce #'* lst :initial-value 1))
+
+(defun between (start end)
+  (labels ((recur (start n)
+	     (if (<= n start)
+		 (list start)
+		 (cons n (recur start (1- n))))))
+    (reverse (recur start end))))
+
+(defun factorial (a)
+  (product (between 1 a)))
+
+(defun absurd (void)
+  (declare (ftype (function ((satisfies null)) t)
+		  absurd)
+	   (ignore void))
+  (error "Cannot invoke.")
+  't)
+
+;; this is a pair whose 2nd value is a pair
+(a (b (c (d nil))))
+
+(defun unit (a) (declare (ignore a)))
+
+(defun memoize (f)
+  (let ((memo (make-hash-table :test 'equalp)))
+    (lambda (&rest args)
+      (or (gethash (cons f args) memo)
+	  (setf (gethash (cons f args) memo)
+		(apply f args))))))
+
+(defun test-memo ()
+  (let* ((memo-fact (memoize #'factorial))
+	 (memo-random (memoize #'random))
+	 (memo-random-seed (memoize #'random)))
+    ;; factorial
+    (time (funcall memo-fact 10000))
+    (time (funcall memo-fact 10000))
+    ;; random
+    (format t "Random Test:~%Call-1: res=~a~%Call-2: res=~a~%"
+	    (funcall memo-random 42)
+	    (funcall memo-random 42))
+    ;; random with seed
+    (format t "Random with Seed Test:~%Call-1: res=~a~%Call-2: res=~a~%"
+	    (funcall memo-random-seed 42 (seed-random-state t))
+	    (funcall memo-random-seed 42 (seed-random-state t)))))
+
+
+;; Q: Try to memoize a function from your standard library that you
+;;    normally use to produce random numbers. Does it work?
+;; A: No because once we memoize expects pure functions, meaning we cannot
+;;    memoize function with side effects since we no longer evaluate their
+;;    body.
+;;
+;; Q: Does memoizing random with a seed work as expected?
+;; A: Yes
+;;
+;; Q: Which of these functions are pure? (fact, getchar, "id")
+;; A: Only getchar is impure
+;;
+;; Q: How many different functions are there from Bool to Bool? Can
+;;    you implement them all?
+;; A: There are 2 x 2 counts of functions from Bool to Bool.
+;;    Yes, since Bool is a finite set.
+;; Remarks: In Haskell, every type is extend with one additional value,
+;;          called __bottom__ (_|_). Taking this in consideration,
+;;          we have 3 x 3 counts of functions from Bool to Bool.
